@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+# lockfile do npm (o projeto usa bun.lock como canônico)
+package-lock.json
 dist
 dist-ssr
 .output
@@ -15,6 +17,10 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+
+# Env local (segredos — NÃO comitar; use .env.example como referência)
+.env
+.env.local
 
 # Wrangler / Cloudflare
 .wrangler/

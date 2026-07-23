@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+// Google Gemini via endpoint compatível com OpenAI — mesmo formato {model, messages}.
+// Chave: gere no Google AI Studio (aistudio.google.com) e coloque como GEMINI_API_KEY no .env.
+const GEMINI_AI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `Você é a estrategista de conteúdo do Roteiriza — não um gerador genérico, e sim a mentora de conteúdo do usuário. Use SEMPRE o contexto do briefing (nicho, público, posicionamento, autoridade, oferta). Voz: amiga sincera + especialista, calorosa mas direta, que cutuca a dor pra gerar movimento e fala a língua do nicho.
 
@@ -89,8 +92,8 @@ export const chatGenerate = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY ausente. Ative Lovable AI.");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY ausente. Adicione sua chave do Google AI Studio no .env.");
 
     // Load conversation
     const { data: conv, error: convErr } = await supabase
@@ -136,10 +139,9 @@ CONFIGURAÇÃO DESTA GERAÇÃO:
 - Objetivo: ${conv.objective ?? "estrategia"}
 - Formato: ${conv.format ?? "-"}`;
 
-    // Build messages
+    // Build messages — junta os dois blocos de sistema num só (mais robusto no Gemini).
     const chatMessages: { role: string; content: string }[] = [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "system", content: contextBlock },
+      { role: "system", content: `${SYSTEM_PROMPT}\n\n${contextBlock}` },
     ];
 
     if (history.length === 0) {
@@ -154,22 +156,23 @@ CONFIGURAÇÃO DESTA GERAÇÃO:
       }
     }
 
-    const res = await fetch(LOVABLE_AI_URL, {
+    const res = await fetch(GEMINI_AI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: GEMINI_MODEL,
         messages: chatMessages,
       }),
     });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      if (res.status === 429) throw new Error("Muitas requisições. Aguarde um instante e tente de novo.");
-      if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos no workspace para continuar.");
+      if (res.status === 429) throw new Error("Muitas requisições no Gemini. Aguarde um instante e tente de novo.");
+      if (res.status === 401 || res.status === 403)
+        throw new Error("Chave do Gemini inválida ou sem permissão. Confira a GEMINI_API_KEY no .env.");
       throw new Error(`Falha na IA (${res.status}): ${text.slice(0, 200)}`);
     }
 
