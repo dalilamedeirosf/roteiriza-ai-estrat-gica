@@ -34,7 +34,12 @@ function ChatPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [revealId, setRevealId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scrollToBottom() {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -67,7 +72,9 @@ function ChatPage() {
           setBusy(true);
           const res = await generate({ data: { conversationId: id } });
           if (!cancelled && res.message) {
-            setMessages((prev) => [...prev, res.message as Msg]);
+            const msg = res.message as Msg;
+            setMessages((prev) => [...prev, msg]);
+            setRevealId(msg.id);
           }
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Erro ao iniciar.");
@@ -90,7 +97,11 @@ function ChatPage() {
     setBusy(true);
     try {
       const res = await generate({ data: { conversationId: id, userMessage: text } });
-      if (res.message) setMessages((m) => [...m, res.message as Msg]);
+      if (res.message) {
+        const msg = res.message as Msg;
+        setMessages((m) => [...m, msg]);
+        setRevealId(msg.id);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro.");
       setMessages((m) => m.filter((x) => x.id !== optimistic.id));
@@ -131,7 +142,13 @@ function ChatPage() {
           ) : (
             <div className="space-y-6">
               {messages.map((m) => (
-                <MessageBubble key={m.id} role={m.role} content={m.content} />
+                <MessageBubble
+                  key={m.id}
+                  role={m.role}
+                  content={m.content}
+                  animate={m.id === revealId}
+                  onReveal={scrollToBottom}
+                />
               ))}
               {busy && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -182,9 +199,45 @@ function extractLegenda(content: string): string | null {
   return rest.trim() || null;
 }
 
-function MessageBubble({ role, content }: { role: string; content: string }) {
+function MessageBubble({
+  role,
+  content,
+  animate,
+  onReveal,
+}: {
+  role: string;
+  content: string;
+  animate?: boolean;
+  onReveal?: () => void;
+}) {
   const isUser = role === "user";
-  const legenda = !isUser ? extractLegenda(content) : null;
+  const [shown, setShown] = useState(() => (animate && !isUser ? 0 : content.length));
+
+  useEffect(() => {
+    if (isUser || !animate) {
+      setShown(content.length);
+      return;
+    }
+    setShown(0);
+    let i = 0;
+    const step = Math.max(2, Math.round(content.length / 140)); // termina o "digitar" em ~2s
+    const timer = setInterval(() => {
+      i += step;
+      if (i >= content.length) {
+        setShown(content.length);
+        clearInterval(timer);
+      } else {
+        setShown(i);
+      }
+      onReveal?.();
+    }, 16);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animate, content, isUser]);
+
+  const revealing = !isUser && shown < content.length;
+  const display = isUser ? content : content.slice(0, shown);
+  const legenda = !isUser && !revealing ? extractLegenda(content) : null;
 
   async function copy(text: string, label: string) {
     try {
@@ -210,9 +263,10 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
             <Sparkles className="h-3 w-3" /> Estrategista
           </div>
         )}
-        {content}
+        {display}
+        {revealing && <span className="ml-0.5 inline-block animate-pulse text-violet">▍</span>}
       </div>
-      {!isUser && (
+      {!isUser && !revealing && (
         <div className="mt-1.5 flex flex-wrap gap-1 pl-1">
           <button
             type="button"
