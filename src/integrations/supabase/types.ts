@@ -270,6 +270,33 @@ export type Database = {
           },
         ]
       }
+      profile_analyses: {
+        Row: {
+          created_at: string
+          handle: string | null
+          id: string
+          input: string | null
+          result: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          handle?: string | null
+          id?: string
+          input?: string | null
+          result: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          handle?: string | null
+          id?: string
+          input?: string | null
+          result?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

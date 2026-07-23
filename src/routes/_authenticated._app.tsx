@@ -14,6 +14,7 @@ import {
   Brain,
   LayoutTemplate,
   Compass,
+  ScanSearch,
   Menu,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -96,12 +97,13 @@ function SidebarInner({
       </div>
       <nav className="flex-1 space-y-1 px-3">
         <NavItem to="/criar" icon={Sparkles} label="Criar" onNavigate={onNavigate} />
+        <NavItem to="/estrategista" icon={Compass} label="Estrategista" onNavigate={onNavigate} />
+        <NavItem to="/analise-perfil" icon={ScanSearch} label="Análise de Perfil" onNavigate={onNavigate} />
         <NavItem to="/conteudos" icon={History} label="Meus Conteúdos" onNavigate={onNavigate} />
-        <NavItem to="/configuracoes" icon={Settings} label="Configurações" onNavigate={onNavigate} />
         <NavItem to="/memoria" icon={Brain} label="Memória da IA" onNavigate={onNavigate} />
+        <NavItem to="/configuracoes" icon={Settings} label="Configurações" onNavigate={onNavigate} />
         <Separator className="my-4" />
         <div className="px-3 pb-2 text-xs uppercase tracking-wider text-muted-foreground">Em breve</div>
-        <SoonItem icon={Compass} label="Estrategista" />
         <SoonItem icon={LayoutTemplate} label="Templates" />
       </nav>
       <div className="border-t p-4">

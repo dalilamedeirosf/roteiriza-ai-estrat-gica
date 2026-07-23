@@ -384,3 +384,164 @@ export const extractLearnings = createServerFn({ method: "POST" })
       return { added: 0 };
     }
   });
+
+// Helper: monta os blocos de memória (regras/histórias/aprendizados) como texto.
+function buildMemoryBlocks(
+  rules: { content: string }[] | null,
+  stories: { title: string | null; content: string }[] | null,
+  learnings: { kind: string; content: string }[] | null,
+): string {
+  let out = "";
+  if (rules?.length)
+    out += `\n\nREGRAS ABSOLUTAS DO USUÁRIO (prioridade máxima — obedeça acima de tudo):\n${rules.map((r) => `- ${r.content}`).join("\n")}`;
+  if (stories?.length)
+    out += `\n\nBANCO DE HISTÓRIAS REAIS DO USUÁRIO (matéria-prima autêntica):\n${stories.map((s) => `• ${s.title ? s.title + ": " : ""}${s.content}`).join("\n")}`;
+  if (learnings?.length)
+    out += `\n\nO QUE A IA JÁ APRENDEU SOBRE ESTE USUÁRIO:\n${learnings.map((l) => `- [${l.kind}] ${l.content}`).join("\n")}`;
+  return out;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ESTRATEGISTA — consultoria aberta de conteúdo/estratégia (chat livre).
+const strategistInputSchema = z.object({
+  messages: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1) }))
+    .min(1)
+    .max(40),
+});
+
+const STRATEGIST_PROMPT = `Você é a estrategista de conteúdo do Roteiriza, no modo consultoria aberta — como uma mentora sênior conversando de igual pra igual.
+
+Converse sobre perfil, conteúdo, posicionamento, estratégia, campanhas, ideias e próximos passos. Use SEMPRE o briefing e a memória do usuário (respeite as REGRAS ABSOLUTAS).
+
+Como responder:
+- Direta, prática e ACIONÁVEL — dê próximos passos concretos, não teoria.
+- Voz de amiga sincera + especialista; pode provocar pra tirar da inércia.
+- Quando fizer sentido, sugira formatos/temas específicos que ela pode criar aqui no Roteiriza (Reels/Carrossel/Stories).
+- PT-BR, escaneável (listas curtas, negrito no que importa). Nada de encher linguiça.`;
+
+export const strategistChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => strategistInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY ausente. Adicione sua chave do Google AI Studio no .env.");
+
+    const { data: briefing } = await supabase.from("briefings").select("*").eq("user_id", userId).maybeSingle();
+    let rules: { content: string }[] | null = null;
+    let stories: { title: string | null; content: string }[] | null = null;
+    let learnings: { kind: string; content: string }[] | null = null;
+    try {
+      const q = await supabase.from("ai_rules").select("content").eq("user_id", userId).eq("active", true);
+      rules = q.data;
+    } catch {
+      /* tabela ausente */
+    }
+    try {
+      const q = await supabase.from("stories").select("title, content").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
+      stories = q.data;
+    } catch {
+      /* tabela ausente */
+    }
+    try {
+      const q = await supabase.from("ai_learnings").select("kind, content").eq("user_id", userId).order("created_at", { ascending: false }).limit(40);
+      learnings = q.data;
+    } catch {
+      /* tabela ausente */
+    }
+
+    const ctx = `${buildBriefingContext(briefing as BriefingRow | null)}${buildMemoryBlocks(rules, stories, learnings)}`;
+    const messages = [
+      { role: "system", content: `${STRATEGIST_PROMPT}\n\n${ctx}` },
+      ...data.messages.slice(-30),
+    ];
+
+    const res = await fetch(GEMINI_AI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: GEMINI_MODEL, messages }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      if (res.status === 429) throw new Error("Muitas requisições no Gemini. Aguarde e tente de novo.");
+      throw new Error(`Falha na IA (${res.status}): ${t.slice(0, 200)}`);
+    }
+    const payload = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const reply = payload.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!reply) throw new Error("A IA não retornou conteúdo.");
+    return { reply };
+  });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ANÁLISE DE PERFIL — analisa bio/posts/métricas e devolve diagnóstico acionável.
+const analyzeInputSchema = z.object({
+  handle: z.string().max(120).optional(),
+  strategic_name: z.string().max(200).optional(),
+  bio: z.string().max(2000).optional(),
+  highlights: z.string().max(1000).optional(),
+  content: z.string().min(10).max(8000),
+});
+
+const ANALYZE_PROMPT = `Você é uma estrategista de Instagram sênior. Analise o perfil abaixo (bio, destaques, posts e métricas colados pelo usuário) e devolva uma ANÁLISE COMPLETA E ACIONÁVEL, em PT-BR, nesta estrutura:
+
+1. DIAGNÓSTICO RÁPIDO — o que o perfil comunica hoje na primeira impressão; pra quem parece falar; nota de clareza (0–10) com 1 frase de justificativa.
+2. BIO & PRIMEIRA DOBRA — o que melhorar + uma sugestão de BIO REESCRITA pronta pra colar.
+3. POSICIONAMENTO & OFERTA — está claro o que a pessoa faz e pra quem? o que falta pra virar autoridade/desejo?
+4. CONTEÚDO — o que parece funcionar / o que falta; 3 a 5 temas e formatos recomendados (Reels/Carrossel/Stories) com um gancho de exemplo cada.
+5. PRÓXIMOS PASSOS — 3 ações concretas pros próximos 7 dias.
+
+Seja direta, específica e prática. Nada de conselho genérico. Use o que foi colado; se algo faltar, aponte o que a pessoa deveria observar.`;
+
+export const analyzeProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => analyzeInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY ausente. Adicione sua chave do Google AI Studio no .env.");
+
+    const profileText = [
+      data.handle && `@: ${data.handle}`,
+      data.strategic_name && `Nome estratégico: ${data.strategic_name}`,
+      data.bio && `Bio:\n${data.bio}`,
+      data.highlights && `Destaques: ${data.highlights}`,
+      `Posts recentes e métricas colados:\n${data.content}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const res = await fetch(GEMINI_AI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: GEMINI_MODEL,
+        messages: [
+          { role: "system", content: ANALYZE_PROMPT },
+          { role: "user", content: profileText },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      if (res.status === 429) throw new Error("Muitas requisições no Gemini. Aguarde e tente de novo.");
+      throw new Error(`Falha na IA (${res.status}): ${t.slice(0, 200)}`);
+    }
+    const payload = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const analysis = payload.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!analysis) throw new Error("A IA não retornou a análise.");
+
+    let id: string | null = null;
+    try {
+      const { data: saved } = await supabase
+        .from("profile_analyses")
+        .insert({ user_id: userId, handle: data.handle ?? null, input: profileText, result: analysis })
+        .select("id")
+        .single();
+      id = saved?.id ?? null;
+    } catch {
+      /* tabela ausente: retorna sem salvar */
+    }
+
+    return { analysis, id, handle: data.handle ?? null };
+  });
