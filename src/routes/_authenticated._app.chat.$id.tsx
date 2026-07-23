@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-session";
-import { chatGenerate } from "@/lib/ai.functions";
+import { chatGenerate, extractLearnings } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ function ChatPage() {
   const { user } = useSession();
   const navigate = useNavigate();
   const generate = useServerFn(chatGenerate);
+  const extract = useServerFn(extractLearnings);
   const [conv, setConv] = useState<Conv | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -101,6 +102,8 @@ function ChatPage() {
         const msg = res.message as Msg;
         setMessages((m) => [...m, msg]);
         setRevealId(msg.id);
+        // auto-aprendizado (fire-and-forget — não bloqueia nem afeta a geração)
+        void extract({ data: { conversationId: id } }).catch(() => {});
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro.");

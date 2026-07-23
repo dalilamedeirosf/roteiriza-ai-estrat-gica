@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Shield, BookOpen, Sparkles } from "lucide-react";
+import { Loader2, Plus, Trash2, Shield, BookOpen, Sparkles, Brain } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/_app/memoria")({
   component: MemoriaPage,
@@ -15,6 +15,13 @@ export const Route = createFileRoute("/_authenticated/_app/memoria")({
 
 type Rule = { id: string; content: string; active: boolean };
 type Story = { id: string; title: string | null; content: string };
+type Learning = { id: string; kind: string; content: string };
+
+const KIND_LABEL: Record<string, string> = {
+  preferencia: "Preferências",
+  estilo: "Tom & Estilo",
+  aprendizado: "Aprendizados",
+};
 
 function isMissingTable(msg?: string) {
   return !!msg && /relation|does not exist|schema cache|could not find the table/i.test(msg);
@@ -24,6 +31,7 @@ function MemoriaPage() {
   const { user } = useSession();
   const [rules, setRules] = useState<Rule[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
+  const [learnings, setLearnings] = useState<Learning[]>([]);
   const [loading, setLoading] = useState(true);
   const [tablesMissing, setTablesMissing] = useState(false);
   const [newRule, setNewRule] = useState("");
@@ -45,9 +53,15 @@ function MemoriaPage() {
         .select("id, title, content")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+      const { data: l } = await supabase
+        .from("ai_learnings")
+        .select("id, kind, content")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
       if (isMissingTable(er?.message)) setTablesMissing(true);
       setRules((r ?? []) as Rule[]);
       setStories((s ?? []) as Story[]);
+      setLearnings((l ?? []) as Learning[]);
       setLoading(false);
     })();
   }, [user]);
@@ -105,6 +119,11 @@ function MemoriaPage() {
   async function delStory(id: string) {
     setStories((x) => x.filter((s) => s.id !== id));
     await supabase.from("stories").delete().eq("id", id);
+  }
+
+  async function delLearning(id: string) {
+    setLearnings((x) => x.filter((l) => l.id !== id));
+    await supabase.from("ai_learnings").delete().eq("id", id);
   }
 
   if (loading) {
@@ -170,6 +189,47 @@ function MemoriaPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Aprendizado automático */}
+        <section className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-violet" />
+            <h2 className="editorial-title text-xl">O que a IA aprendeu</h2>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gerado automaticamente conforme você cria e ajusta conteúdos — a IA vai te conhecendo cada vez melhor.
+          </p>
+          <div className="mt-4 space-y-4">
+            {learnings.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Ainda nada por aqui. Crie e ajuste alguns conteúdos que a IA começa a aprender sozinha.
+              </p>
+            )}
+            {(["preferencia", "estilo", "aprendizado"] as const).map((k) => {
+              const items = learnings.filter((l) => l.kind === k);
+              if (items.length === 0) return null;
+              return (
+                <div key={k}>
+                  <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">{KIND_LABEL[k]}</div>
+                  <div className="space-y-2">
+                    {items.map((l) => (
+                      <div key={l.id} className="flex items-start gap-3 rounded-xl border bg-background p-3">
+                        <p className="flex-1 text-sm">{l.content}</p>
+                        <button
+                          onClick={() => delLearning(l.id)}
+                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          aria-label="Excluir aprendizado"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

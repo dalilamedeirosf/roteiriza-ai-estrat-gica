@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_learnings: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_rules: {
         Row: {
           active: boolean

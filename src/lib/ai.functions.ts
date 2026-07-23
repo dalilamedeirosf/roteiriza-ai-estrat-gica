@@ -171,6 +171,20 @@ export const chatGenerate = createServerFn({ method: "POST" })
     } catch {
       /* tabela ausente */
     }
+    let learningsBlock = "";
+    try {
+      const { data: learnings } = await supabase
+        .from("ai_learnings")
+        .select("kind, content")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (learnings?.length) {
+        learningsBlock = `\n\nO QUE A IA JÁ APRENDEU SOBRE ESTE USUÁRIO (use pra personalizar; não contradiga):\n${learnings.map((l) => `- [${l.kind}] ${l.content}`).join("\n")}`;
+      }
+    } catch {
+      /* tabela ausente */
+    }
 
     // Load existing messages
     const { data: existing } = await supabase
@@ -198,7 +212,7 @@ export const chatGenerate = createServerFn({ method: "POST" })
 CONFIGURAÇÃO DESTA GERAÇÃO:
 - Tipo: ${conv.content_type}
 - Objetivo: ${conv.objective ?? "estrategia"}
-- Formato: ${conv.format ?? "-"}${rulesBlock}${storiesBlock}`;
+- Formato: ${conv.format ?? "-"}${rulesBlock}${storiesBlock}${learningsBlock}`;
 
     // Build messages — junta os dois blocos de sistema num só (mais robusto no Gemini).
     const chatMessages: { role: string; content: string }[] = [
@@ -275,4 +289,98 @@ CONFIGURAÇÃO DESTA GERAÇÃO:
     }
 
     return { message: inserted };
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auto-aprendizado: extrai preferências/estilo do usuário a partir da conversa.
+// Chamada fire-and-forget pelo cliente após cada geração. Best-effort: nunca lança.
+const extractInputSchema = z.object({ conversationId: z.string().uuid() });
+
+const EXTRACT_PROMPT = `Você analisa uma conversa entre um usuário e a IA de conteúdo do Roteiriza. Extraia APRENDIZADOS NOVOS sobre as PREFERÊNCIAS, ESTILO e DIREÇÃO do usuário, úteis pra personalizar os próximos conteúdos.
+
+Regras:
+- Retorne de 0 a 3 itens NOVOS. Se não houver nada realmente novo e útil, retorne lista vazia.
+- NÃO repita nada que já esteja na lista de memórias existentes (nem reformulado).
+- Cada item: frase curta, afirmativa, na 3ª pessoa ("O usuário prefere...", "Valoriza...", "O tom que funciona é...").
+- kind: "preferencia" (formatos/temas/abordagens), "estilo" (tom de voz e maneirismos) ou "aprendizado" (o que funciona / direção estratégica).
+- Baseie-se em correções, escolhas e ênfases reais do usuário — não invente.
+
+Responda SOMENTE em JSON válido: {"items":[{"kind":"preferencia|estilo|aprendizado","content":"..."}]}`;
+
+export const extractLearnings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => extractInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return { added: 0 };
+
+    try {
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("id", data.conversationId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!conv) return { added: 0 };
+
+      const { data: msgs } = await supabase
+        .from("messages")
+        .select("role, content")
+        .eq("conversation_id", data.conversationId)
+        .order("created_at", { ascending: true });
+      const history = (msgs ?? []).slice(-8);
+      if (history.filter((m) => m.role === "user").length === 0) return { added: 0 };
+
+      const { data: existing } = await supabase
+        .from("ai_learnings")
+        .select("content")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(60);
+      const existingList = (existing ?? []).map((e) => e.content as string);
+
+      const convText = history
+        .map((m) => `${m.role === "user" ? "USUÁRIO" : "IA"}: ${m.content}`)
+        .join("\n\n");
+      const userMsg = `MEMÓRIAS JÁ EXISTENTES (não repita):\n${existingList.map((c) => `- ${c}`).join("\n") || "(nenhuma)"}\n\nCONVERSA:\n${convText}`;
+
+      const res = await fetch(GEMINI_AI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: GEMINI_MODEL,
+          messages: [
+            { role: "system", content: EXTRACT_PROMPT },
+            { role: "user", content: userMsg },
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+      if (!res.ok) return { added: 0 };
+
+      const payload = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      let raw = payload.choices?.[0]?.message?.content?.trim() ?? "";
+      raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
+      const parsed = JSON.parse(raw) as { items?: { kind?: string; content?: string }[] };
+
+      const validKinds = new Set(["aprendizado", "preferencia", "estilo"]);
+      const existingLower = new Set(existingList.map((c) => c.toLowerCase().trim()));
+      const toInsert = (parsed.items ?? [])
+        .filter((i) => i && typeof i.content === "string")
+        .map((i) => ({
+          user_id: userId,
+          kind: validKinds.has(String(i.kind)) ? String(i.kind) : "aprendizado",
+          content: String(i.content).trim().slice(0, 300),
+        }))
+        .filter((i) => i.content.length > 8 && !existingLower.has(i.content.toLowerCase()))
+        .slice(0, 3);
+
+      if (toInsert.length === 0) return { added: 0 };
+      const { error } = await supabase.from("ai_learnings").insert(toInsert);
+      if (error) return { added: 0 };
+      return { added: toInsert.length };
+    } catch {
+      return { added: 0 };
+    }
   });
