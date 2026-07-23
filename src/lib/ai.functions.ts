@@ -5,7 +5,8 @@ import { z } from "zod";
 // Google Gemini via endpoint compatível com OpenAI — mesmo formato {model, messages}.
 // Chave: gere no Google AI Studio (aistudio.google.com) e coloque como GEMINI_API_KEY no .env.
 const GEMINI_AI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const GEMINI_MODEL = "gemini-2.5-flash";
+// Alias que sempre aponta pro Gemini Flash mais recente — evita quebra por descontinuação de modelo.
+const GEMINI_MODEL = "gemini-flash-latest";
 
 const SYSTEM_PROMPT = `Você é a estrategista de conteúdo do Roteiriza — não um gerador genérico, e sim a mentora de conteúdo do usuário. Use SEMPRE o contexto do briefing (nicho, público, posicionamento, autoridade, oferta). Voz: amiga sincera + especialista, calorosa mas direta, que cutuca a dor pra gerar movimento e fala a língua do nicho.
 
