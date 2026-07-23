@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CONTENT_TYPES, OBJECTIVES, labelOf, formatLabel } from "@/lib/roteiriza-constants";
-import { Loader2, Send, Plus, Sparkles } from "lucide-react";
+import { Loader2, Send, Plus, Sparkles, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/_app/chat/$id")({
@@ -109,7 +109,7 @@ function ChatPage() {
     : "";
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col md:h-screen">
       <header className="border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <div>
@@ -172,10 +172,31 @@ function ChatPage() {
   );
 }
 
+// Extrai só a legenda ("Legenda:") do roteiro, parando no próximo marcador de seção.
+function extractLegenda(content: string): string | null {
+  const idx = content.search(/\blegenda:/i);
+  if (idx === -1) return null;
+  let rest = content.slice(idx).replace(/\blegenda:\s*/i, "");
+  const stop = rest.search(/\n\s*(🎨|💡|Recomendações:|Sugestão de primeira linha|GRAVAÇÃO:)/i);
+  if (stop !== -1) rest = rest.slice(0, stop);
+  return rest.trim() || null;
+}
+
 function MessageBubble({ role, content }: { role: string; content: string }) {
   const isUser = role === "user";
+  const legenda = !isUser ? extractLegenda(content) : null;
+
+  async function copy(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copiado!`);
+    } catch {
+      toast.error("Não consegui copiar. Selecione e copie manualmente.");
+    }
+  }
+
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
       <div
         className={cn(
           "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-soft",
@@ -191,6 +212,26 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
         )}
         {content}
       </div>
+      {!isUser && (
+        <div className="mt-1.5 flex flex-wrap gap-1 pl-1">
+          <button
+            type="button"
+            onClick={() => copy(content, "Roteiro")}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Copy className="h-3 w-3" /> Copiar roteiro
+          </button>
+          {legenda && (
+            <button
+              type="button"
+              onClick={() => copy(legenda, "Legenda")}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Copy className="h-3 w-3" /> Copiar legenda
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

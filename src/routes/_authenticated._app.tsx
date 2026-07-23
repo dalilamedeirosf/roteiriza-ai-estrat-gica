@@ -5,6 +5,7 @@ import { useSession } from "@/hooks/use-session";
 import { Logo } from "@/components/roteiriza/logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
   Sparkles,
   History,
@@ -13,6 +14,7 @@ import {
   Brain,
   LayoutTemplate,
   Compass,
+  Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +26,7 @@ function AppLayout() {
   const { user } = useSession();
   const navigate = useNavigate();
   const [checked, setChecked] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,41 +47,90 @@ function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar md:flex">
-        <div className="px-6 py-6">
-          <Logo size="sm" />
-        </div>
-        <nav className="flex-1 space-y-1 px-3">
-          <NavItem to="/criar" icon={Sparkles} label="Criar" />
-          <NavItem to="/conteudos" icon={History} label="Meus Conteúdos" />
-          <NavItem to="/configuracoes" icon={Settings} label="Configurações" />
-          <Separator className="my-4" />
-          <div className="px-3 pb-2 text-xs uppercase tracking-wider text-muted-foreground">Em breve</div>
-          <SoonItem icon={Compass} label="Estrategista" />
-          <SoonItem icon={LayoutTemplate} label="Templates" />
-          <SoonItem icon={Brain} label="Memória da IA" />
-        </nav>
-        <div className="border-t p-4">
-          <div className="mb-3 truncate text-xs text-muted-foreground">{user?.email}</div>
-          <Button variant="ghost" size="sm" onClick={logout} className="w-full justify-start">
-            <LogOut className="mr-2 h-4 w-4" /> Sair
-          </Button>
+      {/* Sidebar — desktop */}
+      <aside className="hidden w-64 shrink-0 md:flex">
+        <div className="flex w-64 flex-col border-r bg-sidebar">
+          <SidebarInner email={user?.email} onLogout={logout} />
         </div>
       </aside>
 
-      <main className="flex-1">
-        <Outlet />
-      </main>
+      {/* Coluna de conteúdo */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar — mobile */}
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur md:hidden">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Abrir menu">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 bg-sidebar p-0">
+              <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+              <SidebarInner email={user?.email} onLogout={logout} onNavigate={() => setMobileOpen(false)} />
+            </SheetContent>
+          </Sheet>
+          <Logo size="sm" />
+        </header>
+
+        <main className="min-w-0 flex-1">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
 
-function NavItem({ to, icon: Icon, label }: { to: string; icon: React.ElementType; label: string }) {
+function SidebarInner({
+  email,
+  onLogout,
+  onNavigate,
+}: {
+  email?: string | null;
+  onLogout: () => void;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="px-6 py-6">
+        <Logo size="sm" />
+      </div>
+      <nav className="flex-1 space-y-1 px-3">
+        <NavItem to="/criar" icon={Sparkles} label="Criar" onNavigate={onNavigate} />
+        <NavItem to="/conteudos" icon={History} label="Meus Conteúdos" onNavigate={onNavigate} />
+        <NavItem to="/configuracoes" icon={Settings} label="Configurações" onNavigate={onNavigate} />
+        <Separator className="my-4" />
+        <div className="px-3 pb-2 text-xs uppercase tracking-wider text-muted-foreground">Em breve</div>
+        <SoonItem icon={Compass} label="Estrategista" />
+        <SoonItem icon={LayoutTemplate} label="Templates" />
+        <SoonItem icon={Brain} label="Memória da IA" />
+      </nav>
+      <div className="border-t p-4">
+        <div className="mb-3 truncate text-xs text-muted-foreground">{email}</div>
+        <Button variant="ghost" size="sm" onClick={onLogout} className="w-full justify-start">
+          <LogOut className="mr-2 h-4 w-4" /> Sair
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function NavItem({
+  to,
+  icon: Icon,
+  label,
+  onNavigate,
+}: {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  onNavigate?: () => void;
+}) {
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const active = currentPath === to || currentPath.startsWith(to + "/");
   return (
     <Link
       to={to}
+      onClick={onNavigate}
       className={
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors " +
         (active
