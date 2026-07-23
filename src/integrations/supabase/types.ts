@@ -14,7 +14,217 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      briefings: {
+        Row: {
+          about: string | null
+          audience_desires: string | null
+          audience_pains: string | null
+          audience_who: string | null
+          completed: boolean
+          created_at: string
+          differential: string | null
+          handle: string | null
+          id: string
+          niche: string | null
+          offer: string | null
+          results: string | null
+          score: number
+          score_autoridade: number
+          score_nicho: number
+          score_posicionamento: number
+          score_publico: number
+          story: string | null
+          subniche: string | null
+          tone_of_voice: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          about?: string | null
+          audience_desires?: string | null
+          audience_pains?: string | null
+          audience_who?: string | null
+          completed?: boolean
+          created_at?: string
+          differential?: string | null
+          handle?: string | null
+          id?: string
+          niche?: string | null
+          offer?: string | null
+          results?: string | null
+          score?: number
+          score_autoridade?: number
+          score_nicho?: number
+          score_posicionamento?: number
+          score_publico?: number
+          story?: string | null
+          subniche?: string | null
+          tone_of_voice?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          about?: string | null
+          audience_desires?: string | null
+          audience_pains?: string | null
+          audience_who?: string | null
+          completed?: boolean
+          created_at?: string
+          differential?: string | null
+          handle?: string | null
+          id?: string
+          niche?: string | null
+          offer?: string | null
+          results?: string | null
+          score?: number
+          score_autoridade?: number
+          score_nicho?: number
+          score_posicionamento?: number
+          score_publico?: number
+          story?: string | null
+          subniche?: string | null
+          tone_of_voice?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          content_type: string
+          created_at: string
+          format: string | null
+          id: string
+          objective: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          format?: string | null
+          id?: string
+          objective?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          format?: string | null
+          id?: string
+          objective?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generated_contents: {
+        Row: {
+          body: string
+          content_type: string | null
+          conversation_id: string | null
+          created_at: string
+          format: string | null
+          id: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          content_type?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          format?: string | null
+          id?: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          content_type?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          format?: string | null
+          id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_contents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
