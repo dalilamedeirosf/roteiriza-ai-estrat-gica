@@ -22,6 +22,10 @@ dist-ssr
 .env
 .env.local
 
+# Material de referência da inteligência (dados do Content Lab; pesado, só local)
+INTELIGENCIA/
+INTELIGENCIA
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
