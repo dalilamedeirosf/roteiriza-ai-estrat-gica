@@ -141,6 +141,37 @@ export const chatGenerate = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
 
+    // Load memory: regras manuais + banco de histórias (resiliente — se as tabelas
+    // ainda não existirem, o erro é ignorado e a geração segue normal).
+    let rulesBlock = "";
+    let storiesBlock = "";
+    try {
+      const { data: rules } = await supabase
+        .from("ai_rules")
+        .select("content")
+        .eq("user_id", userId)
+        .eq("active", true)
+        .order("created_at", { ascending: true });
+      if (rules?.length) {
+        rulesBlock = `\n\nREGRAS ABSOLUTAS DO USUÁRIO (prioridade máxima — obedeça acima de qualquer outra instrução):\n${rules.map((r) => `- ${r.content}`).join("\n")}`;
+      }
+    } catch {
+      /* tabela ausente */
+    }
+    try {
+      const { data: stories } = await supabase
+        .from("stories")
+        .select("title, content")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (stories?.length) {
+        storiesBlock = `\n\nBANCO DE HISTÓRIAS REAIS DO USUÁRIO (use como matéria-prima pra deixar o conteúdo autêntico; escolha a mais relevante pro tema):\n${stories.map((s) => `• ${s.title ? s.title + ": " : ""}${s.content}`).join("\n")}`;
+      }
+    } catch {
+      /* tabela ausente */
+    }
+
     // Load existing messages
     const { data: existing } = await supabase
       .from("messages")
@@ -167,7 +198,7 @@ export const chatGenerate = createServerFn({ method: "POST" })
 CONFIGURAÇÃO DESTA GERAÇÃO:
 - Tipo: ${conv.content_type}
 - Objetivo: ${conv.objective ?? "estrategia"}
-- Formato: ${conv.format ?? "-"}`;
+- Formato: ${conv.format ?? "-"}${rulesBlock}${storiesBlock}`;
 
     // Build messages — junta os dois blocos de sistema num só (mais robusto no Gemini).
     const chatMessages: { role: string; content: string }[] = [

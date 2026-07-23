@@ -98,11 +98,11 @@ function SidebarInner({
         <NavItem to="/criar" icon={Sparkles} label="Criar" onNavigate={onNavigate} />
         <NavItem to="/conteudos" icon={History} label="Meus Conteúdos" onNavigate={onNavigate} />
         <NavItem to="/configuracoes" icon={Settings} label="Configurações" onNavigate={onNavigate} />
+        <NavItem to="/memoria" icon={Brain} label="Memória da IA" onNavigate={onNavigate} />
         <Separator className="my-4" />
         <div className="px-3 pb-2 text-xs uppercase tracking-wider text-muted-foreground">Em breve</div>
         <SoonItem icon={Compass} label="Estrategista" />
         <SoonItem icon={LayoutTemplate} label="Templates" />
-        <SoonItem icon={Brain} label="Memória da IA" />
       </nav>
       <div className="border-t p-4">
         <div className="mb-3 truncate text-xs text-muted-foreground">{email}</div>
