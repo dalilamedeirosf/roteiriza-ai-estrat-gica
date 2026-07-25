@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/roteiriza/logo";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPassword() {
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -29,7 +30,12 @@ function ResetPassword() {
       toast.success("Senha atualizada.");
       navigate({ to: "/criar" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao redefinir.");
+      const msg = err instanceof Error ? err.message.toLowerCase() : "";
+      if (msg.includes("weak") || msg.includes("pwned") || msg.includes("easy to guess") || msg.includes("compromised"))
+        toast.error("Senha muito comum/fraca. Use 8+ caracteres, com letras, números e um símbolo.");
+      else if (msg.includes("at least") || msg.includes("should be"))
+        toast.error("Senha curta demais. Use pelo menos 8 caracteres.");
+      else toast.error(err instanceof Error ? err.message : "Erro ao redefinir.");
     } finally {
       setLoading(false);
     }
@@ -43,8 +49,28 @@ function ResetPassword() {
         <p className="mt-1 text-sm text-muted-foreground">Escolha uma senha nova para acessar sua conta.</p>
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="pw">Senha</Label>
-            <Input id="pw" type="password" minLength={6} required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Label htmlFor="pw">Nova senha</Label>
+            <div className="relative">
+              <Input
+                id="pw"
+                type={showPw ? "text" : "password"}
+                minLength={8}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Use 8+ caracteres, com letras, números e um símbolo. Evite senhas comuns.</p>
           </div>
           <Button disabled={loading} className="w-full rounded-full">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

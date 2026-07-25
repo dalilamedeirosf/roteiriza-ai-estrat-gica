@@ -7,11 +7,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/roteiriza/logo";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup", "forgot"]).catch("login").optional(),
 });
+
+function passwordScore(pw: string): number {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (pw.length >= 12) s++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+  if (/\d/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  return Math.min(s, 4);
+}
+const STRENGTH_LABEL = ["Muito fraca", "Fraca", "Ok", "Boa", "Forte"];
+const STRENGTH_COLOR = ["bg-destructive", "bg-destructive", "bg-amber-500", "bg-emerald-500", "bg-emerald-500"];
+
+function friendlyAuthError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const m = msg.toLowerCase();
+  if (m.includes("weak") || m.includes("pwned") || m.includes("known to be") || m.includes("easy to guess") || m.includes("compromised"))
+    return "Essa senha é muito comum (aparece em vazamentos). Escolha uma senha única: 8+ caracteres, com letras, números e um símbolo.";
+  if (m.includes("at least") || m.includes("minimum") || m.includes("should be"))
+    return "Senha curta demais. Use pelo menos 8 caracteres.";
+  if (m.includes("already registered") || m.includes("already been") || m.includes("user already"))
+    return "Esse e-mail já tem conta. Tente entrar, ou use 'Esqueci' pra redefinir a senha.";
+  if (m.includes("invalid login") || m.includes("invalid credentials"))
+    return "E-mail ou senha incorretos.";
+  if (m.includes("email not confirmed"))
+    return "E-mail ainda não confirmado. Verifique sua caixa de entrada.";
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Muitas tentativas. Aguarde um instante e tente de novo.";
+  return msg || "Algo deu errado.";
+}
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s) => searchSchema.parse(s),
@@ -29,6 +59,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup" | "forgot">(search.mode ?? "login");
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ full_name: "", email: "", whatsapp: "", password: "" });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -64,7 +95,7 @@ function AuthPage() {
         setMode("login");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Algo deu errado.");
+      toast.error(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -153,15 +184,51 @@ function AuthPage() {
                     </button>
                   )}
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={6}
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPw ? "text" : "password"}
+                    required
+                    minLength={mode === "signup" ? 8 : 6}
+                    value={form.password}
+                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    placeholder="••••••••"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {mode === "signup" && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className={
+                            "h-1 flex-1 rounded-full transition-colors " +
+                            (form.password && passwordScore(form.password) > i
+                              ? STRENGTH_COLOR[passwordScore(form.password)]
+                              : "bg-muted")
+                          }
+                        />
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {form.password && (
+                        <>
+                          Força: <span className="font-medium">{STRENGTH_LABEL[passwordScore(form.password)]}</span> ·{" "}
+                        </>
+                      )}
+                      Use 8+ caracteres, com letras, números e um símbolo. Evite senhas comuns.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
