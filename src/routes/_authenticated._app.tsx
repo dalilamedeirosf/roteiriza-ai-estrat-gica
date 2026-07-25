@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   Compass,
   ScanSearch,
+  Zap,
   Menu,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -96,6 +97,7 @@ function SidebarInner({
       </div>
       <nav className="flex-1 space-y-1 px-3">
         <NavItem to="/criar" icon={Sparkles} label="Criar" onNavigate={onNavigate} />
+        <NavItem to="/desafio" icon={Zap} label="Desafio Sprint" onNavigate={onNavigate} />
         <NavItem to="/estrategista" icon={Compass} label="Estrategista" onNavigate={onNavigate} />
         <NavItem to="/analise-perfil" icon={ScanSearch} label="Análise de Perfil" onNavigate={onNavigate} />
         <NavItem to="/templates" icon={LayoutTemplate} label="Templates" onNavigate={onNavigate} />

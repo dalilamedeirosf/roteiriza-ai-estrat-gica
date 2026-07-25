@@ -297,6 +297,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sprint_progress: {
+        Row: {
+          created_at: string
+          day: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { SPRINT_DAYS } from "@/lib/roteiriza-constants";
 import { z } from "zod";
 
 // Google Gemini via endpoint compatível com OpenAI — mesmo formato {model, messages}.
@@ -544,4 +545,83 @@ export const analyzeProfile = createServerFn({ method: "POST" })
     }
 
     return { analysis, id, handle: data.handle ?? null };
+  });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DESAFIO SPRINT — gera as 3 ideias personalizadas do dia (usa briefing+memória).
+const sprintInputSchema = z.object({ day: z.number().int().min(1).max(15) });
+
+export const sprintGenerate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => sprintInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY ausente. Adicione sua chave do Google AI Studio no .env.");
+
+    const dayInfo = SPRINT_DAYS.find((d) => d.day === data.day);
+    if (!dayInfo) throw new Error("Dia inválido.");
+
+    const { data: briefing } = await supabase.from("briefings").select("*").eq("user_id", userId).maybeSingle();
+    let rules: { content: string }[] | null = null;
+    let stories: { title: string | null; content: string }[] | null = null;
+    let learnings: { kind: string; content: string }[] | null = null;
+    try {
+      const q = await supabase.from("ai_rules").select("content").eq("user_id", userId).eq("active", true);
+      rules = q.data;
+    } catch {
+      /* tabela ausente */
+    }
+    try {
+      const q = await supabase.from("stories").select("title, content").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
+      stories = q.data;
+    } catch {
+      /* tabela ausente */
+    }
+    try {
+      const q = await supabase.from("ai_learnings").select("kind, content").eq("user_id", userId).order("created_at", { ascending: false }).limit(40);
+      learnings = q.data;
+    } catch {
+      /* tabela ausente */
+    }
+
+    const ctx = `${buildBriefingContext(briefing as BriefingRow | null)}${buildMemoryBlocks(rules, stories, learnings)}`;
+    const system = `Você é a estrategista do Roteiriza guiando um Desafio de conteúdo de 15 dias. Hoje é o DIA ${dayInfo.day}: "${dayInfo.title}" (objetivo: ${dayInfo.objective}). Foco do dia: ${dayInfo.focus}
+
+Gere 3 IDEIAS DE CONTEÚDO prontas pra postar hoje, personalizadas pro nicho, público e histórias do usuário. Para cada ideia, siga o formato:
+
+**Ideia N — [Formato: Reels, Carrossel ou Stories]**
+Gancho: [primeira linha que para o scroll]
+Como fazer: [2–3 linhas de desenvolvimento/ângulo, aplicável hoje]
+
+Direto ao ponto, PT-BR. Respeite as REGRAS ABSOLUTAS do usuário e conecte à oferta quando fizer sentido.
+${ctx}`;
+
+    const res = await fetch(GEMINI_AI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: GEMINI_MODEL,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: `Me dê as 3 ideias do Dia ${dayInfo.day}.` },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      if (res.status === 429) throw new Error("Muitas requisições no Gemini. Aguarde e tente de novo.");
+      throw new Error(`Falha na IA (${res.status}): ${t.slice(0, 200)}`);
+    }
+    const payload = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const ideas = payload.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!ideas) throw new Error("A IA não retornou as ideias.");
+
+    try {
+      await supabase.from("sprint_progress").upsert({ user_id: userId, day: data.day }, { onConflict: "user_id,day" });
+    } catch {
+      /* tabela ausente */
+    }
+
+    return { ideas };
   });

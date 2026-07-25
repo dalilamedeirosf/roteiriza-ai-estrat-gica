@@ -107,10 +107,11 @@ function ConfigPage() {
         <section className="rounded-2xl border bg-card p-6 shadow-soft">
           <h2 className="editorial-title text-xl">Meu Plano</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Você está no plano <span className="font-medium text-foreground">Teste</span>. Em breve você poderá fazer upgrade
-            para gerar sem limites.
+            Você está no plano <span className="font-medium text-foreground">Teste</span>. Faça upgrade pra gerar sem limites.
           </p>
-          <Button disabled className="mt-4 rounded-full">Em breve</Button>
+          <Button asChild className="mt-4 rounded-full">
+            <Link to="/planos">Ver planos</Link>
+          </Button>
         </section>
       </div>
     </div>
