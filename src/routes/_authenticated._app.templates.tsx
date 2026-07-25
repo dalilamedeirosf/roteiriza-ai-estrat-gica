@@ -140,13 +140,21 @@ function TemplatesPage() {
                   rel="noreferrer"
                   className="group relative block overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-editorial"
                 >
-                  <div className="aspect-[4/5] w-full">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-secondary">
+                    {/* placeholder atrás — aparece enquanto o embed carrega */}
+                    <div className={cn("absolute inset-0 flex items-center justify-center bg-gradient-to-br", templateGradient(t.id))}>
+                      <span className="editorial-title text-3xl text-white/80">{String(t.id).padStart(2, "0")}</span>
+                    </div>
                     {t.thumb ? (
-                      <img src={t.thumb} alt={t.title ?? `Template ${t.id}`} className="h-full w-full object-cover" />
+                      <img src={t.thumb} alt={t.title ?? `Template ${t.id}`} className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
-                      <div className={cn("flex h-full w-full items-center justify-center bg-gradient-to-br", templateGradient(t.id))}>
-                        <span className="editorial-title text-3xl text-white/90">{String(t.id).padStart(2, "0")}</span>
-                      </div>
+                      <iframe
+                        src={`${t.url}?embed`}
+                        loading="lazy"
+                        title={`Template ${t.id}`}
+                        className="pointer-events-none absolute inset-0 h-full w-full border-0"
+                        allowFullScreen
+                      />
                     )}
                   </div>
                   <div className="absolute right-2 top-2 rounded-full bg-background/85 p-1.5 text-foreground shadow-soft backdrop-blur transition-colors group-hover:text-violet">
