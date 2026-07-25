@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Copy, Sparkles, LayoutTemplate, Film, Layers, Smartphone, ExternalLink, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DESIGN_TEMPLATES, templateGradient } from "@/lib/design-templates";
+import { DESIGN_TEMPLATES, templateGradient, type DesignTemplate } from "@/lib/design-templates";
 
 export const Route = createFileRoute("/_authenticated/_app/templates")({
   component: TemplatesPage,
@@ -133,40 +134,14 @@ function TemplatesPage() {
           ) : (
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {DESIGN_TEMPLATES.map((t) => (
-                <a
-                  key={t.id}
-                  href={t.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group relative block overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-editorial"
-                >
-                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-secondary">
-                    {/* placeholder atrás — aparece enquanto o embed carrega */}
-                    <div className={cn("absolute inset-0 flex items-center justify-center bg-gradient-to-br", templateGradient(t.id))}>
-                      <span className="editorial-title text-3xl text-white/80">{String(t.id).padStart(2, "0")}</span>
-                    </div>
-                    {t.thumb ? (
-                      <img src={t.thumb} alt={t.title ?? `Template ${t.id}`} className="absolute inset-0 h-full w-full object-cover" />
-                    ) : (
-                      <iframe
-                        src={`${t.url}?embed`}
-                        loading="lazy"
-                        title={`Template ${t.id}`}
-                        className="pointer-events-none absolute inset-0 h-full w-full border-0"
-                        allowFullScreen
-                      />
-                    )}
-                  </div>
-                  <div className="absolute right-2 top-2 rounded-full bg-background/85 p-1.5 text-foreground shadow-soft backdrop-blur transition-colors group-hover:text-violet">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </div>
-                  {t.title && <div className="truncate px-3 py-2 text-xs text-muted-foreground">{t.title}</div>}
-                </a>
+                <DesignCard key={t.id} t={t} />
               ))}
             </div>
           )}
           <p className="mt-3 text-xs text-muted-foreground">
-            Adicione os seus editando <code className="rounded bg-muted px-1">src/lib/design-templates.ts</code> (link do Canva + miniatura opcional em <code className="rounded bg-muted px-1">/public/templates</code>).
+            Pra mostrar a arte de cada card, exporte o design no Canva (PNG) e salve em{" "}
+            <code className="rounded bg-muted px-1">{"public/templates/{id}.jpg"}</code> (o número = o do card). Novos templates: edite{" "}
+            <code className="rounded bg-muted px-1">src/lib/design-templates.ts</code>.
           </p>
         </section>
 
@@ -224,5 +199,39 @@ function TemplatesPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+// Card de design: usa a miniatura estática /templates/{id}.jpg se existir;
+// senão, cai num placeholder limpo (gradiente + número). Clique abre no Canva.
+function DesignCard({ t }: { t: DesignTemplate }) {
+  const [imgOk, setImgOk] = useState(true);
+  const src = t.thumb ?? `/templates/${t.id}.jpg`;
+  return (
+    <a
+      href={t.url}
+      target="_blank"
+      rel="noreferrer"
+      className="group relative block overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-editorial"
+    >
+      <div className="relative aspect-[4/5] w-full overflow-hidden">
+        <div className={cn("absolute inset-0 flex flex-col items-center justify-center gap-1 bg-gradient-to-br text-white/85", templateGradient(t.id))}>
+          <span className="editorial-title text-3xl">{String(t.id).padStart(2, "0")}</span>
+          <span className="text-[10px] uppercase tracking-wider opacity-80">Abrir no Canva</span>
+        </div>
+        {imgOk && (
+          <img
+            src={src}
+            alt={t.title ?? `Template ${t.id}`}
+            loading="lazy"
+            onError={() => setImgOk(false)}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+      </div>
+      <div className="absolute right-2 top-2 rounded-full bg-background/85 p-1.5 text-foreground shadow-soft backdrop-blur transition-colors group-hover:text-violet">
+        <ExternalLink className="h-3.5 w-3.5" />
+      </div>
+    </a>
   );
 }
