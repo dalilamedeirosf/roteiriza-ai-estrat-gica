@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Copy, Sparkles, LayoutTemplate, Film, Layers, Smartphone } from "lucide-react";
+import { Copy, Sparkles, LayoutTemplate, Film, Layers, Smartphone, ExternalLink, Palette } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { DESIGN_TEMPLATES, templateGradient } from "@/lib/design-templates";
 
 export const Route = createFileRoute("/_authenticated/_app/templates")({
   component: TemplatesPage,
@@ -109,18 +111,57 @@ function TemplatesPage() {
       <header className="border-b">
         <div className="mx-auto max-w-4xl px-6 py-5">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">Biblioteca</div>
-          <h1 className="editorial-title text-2xl">Templates de Conteúdo</h1>
+          <h1 className="editorial-title text-2xl">Templates</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ganchos e estruturas de roteiro prontos pra usar. Copie, adapte ou peça pra IA criar em cima deles no{" "}
-            <Link to="/criar" className="text-violet underline underline-offset-2">
-              Criar
-            </Link>
-            .
+            Designs prontos pra editar no Canva + ganchos e estruturas de roteiro pra copiar.
           </p>
         </div>
       </header>
 
       <div className="mx-auto max-w-4xl space-y-10 px-6 py-8">
+        {/* Templates de Design (abrem no Canva) */}
+        <section>
+          <div className="flex items-center gap-2">
+            <Palette className="h-5 w-5 text-violet" />
+            <h2 className="editorial-title text-xl">Templates de Design</h2>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">Modelos prontos pra usar no Canva — clique pra abrir e editar.</p>
+          {DESIGN_TEMPLATES.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Nenhum template ainda. Adicione os seus em <code className="rounded bg-muted px-1">src/lib/design-templates.ts</code>.
+            </div>
+          ) : (
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {DESIGN_TEMPLATES.map((t) => (
+                <a
+                  key={t.id}
+                  href={t.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group relative block overflow-hidden rounded-xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-editorial"
+                >
+                  <div className="aspect-[4/5] w-full">
+                    {t.thumb ? (
+                      <img src={t.thumb} alt={t.title ?? `Template ${t.id}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className={cn("flex h-full w-full items-center justify-center bg-gradient-to-br", templateGradient(t.id))}>
+                        <span className="editorial-title text-3xl text-white/90">{String(t.id).padStart(2, "0")}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute right-2 top-2 rounded-full bg-background/85 p-1.5 text-foreground shadow-soft backdrop-blur transition-colors group-hover:text-violet">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </div>
+                  {t.title && <div className="truncate px-3 py-2 text-xs text-muted-foreground">{t.title}</div>}
+                </a>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Adicione os seus editando <code className="rounded bg-muted px-1">src/lib/design-templates.ts</code> (link do Canva + miniatura opcional em <code className="rounded bg-muted px-1">/public/templates</code>).
+          </p>
+        </section>
+
         {/* Ganchos */}
         <section>
           <div className="flex items-center gap-2">
