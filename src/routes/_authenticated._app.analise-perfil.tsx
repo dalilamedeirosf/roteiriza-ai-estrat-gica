@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, ScanSearch, Copy, Trash2, Sparkles } from "lucide-react";
+import { Markdown } from "@/components/roteiriza/markdown";
 
 export const Route = createFileRoute("/_authenticated/_app/analise-perfil")({
   component: AnalisePage,
@@ -149,7 +150,9 @@ function AnalisePage() {
                 <Copy className="mr-1 h-3.5 w-3.5" /> Copiar
               </Button>
             </div>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{result}</div>
+            <div className="text-sm text-foreground/90">
+              <Markdown>{result}</Markdown>
+            </div>
           </section>
         )}
 
@@ -181,7 +184,9 @@ function AnalisePage() {
                         <Copy className="mr-1 h-3.5 w-3.5" /> Copiar
                       </Button>
                     </div>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{a.result}</div>
+                    <div className="text-sm text-foreground/90">
+                      <Markdown>{a.result}</Markdown>
+                    </div>
                   </div>
                 </details>
               ))}

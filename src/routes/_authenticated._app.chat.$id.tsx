@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { CONTENT_TYPES, OBJECTIVES, labelOf, formatLabel } from "@/lib/roteiriza-constants";
 import { Loader2, Send, Plus, Sparkles, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Markdown } from "@/components/roteiriza/markdown";
 
 export const Route = createFileRoute("/_authenticated/_app/chat/$id")({
   component: ChatPage,
@@ -255,10 +256,9 @@ function MessageBubble({
     <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
       <div
         className={cn(
-          "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-soft",
-          isUser
-            ? "bg-primary text-primary-foreground rounded-br-md"
-            : "bg-card border rounded-bl-md",
+          "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-soft",
+          isUser ? "whitespace-pre-wrap rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border bg-card",
+          !isUser && revealing && "whitespace-pre-wrap",
         )}
       >
         {!isUser && (
@@ -266,8 +266,16 @@ function MessageBubble({
             <Sparkles className="h-3 w-3" /> Estrategista
           </div>
         )}
-        {display}
-        {revealing && <span className="ml-0.5 inline-block animate-pulse text-violet">▍</span>}
+        {isUser ? (
+          content
+        ) : revealing ? (
+          <>
+            {display}
+            <span className="ml-0.5 inline-block animate-pulse text-violet">▍</span>
+          </>
+        ) : (
+          <Markdown>{content}</Markdown>
+        )}
       </div>
       {!isUser && !revealing && (
         <div className="mt-1.5 flex flex-wrap gap-1 pl-1">

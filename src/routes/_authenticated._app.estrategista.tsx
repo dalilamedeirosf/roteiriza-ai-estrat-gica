@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Send, Compass, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Markdown } from "@/components/roteiriza/markdown";
 
 export const Route = createFileRoute("/_authenticated/_app/estrategista")({
   component: EstrategistaPage,
@@ -136,8 +137,8 @@ function Bubble({ role, content }: { role: string; content: string }) {
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-soft",
-          isUser ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border bg-card",
+          "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-soft",
+          isUser ? "whitespace-pre-wrap rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border bg-card",
         )}
       >
         {!isUser && (
@@ -145,7 +146,7 @@ function Bubble({ role, content }: { role: string; content: string }) {
             <Compass className="h-3 w-3" /> Estrategista
           </div>
         )}
-        {content}
+        {isUser ? content : <Markdown>{content}</Markdown>}
       </div>
     </div>
   );

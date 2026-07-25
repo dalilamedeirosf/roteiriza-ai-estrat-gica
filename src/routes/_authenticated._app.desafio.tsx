@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Check, Sparkles, Copy, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Markdown } from "@/components/roteiriza/markdown";
 
 export const Route = createFileRoute("/_authenticated/_app/desafio")({
   component: DesafioPage,
@@ -123,9 +124,11 @@ function DesafioPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Sparkles className="h-4 w-4 animate-pulse text-violet" /> Gerando suas 3 ideias…
                 </div>
-              ) : (
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{ideas}</div>
-              )}
+              ) : ideas ? (
+                <div className="text-sm text-foreground/90">
+                  <Markdown>{ideas}</Markdown>
+                </div>
+              ) : null}
             </div>
           </section>
         )}
