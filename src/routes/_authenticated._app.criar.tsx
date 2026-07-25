@@ -3,14 +3,80 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-session";
 import { Button } from "@/components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { toast } from "sonner";
-import { CONTENT_TYPES, OBJECTIVES, FORMATS } from "@/lib/roteiriza-constants";
-import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { CONTENT_TYPES, OBJECTIVES, FORMATS, labelOf } from "@/lib/roteiriza-constants";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Sparkles,
+  Film,
+  GalleryHorizontalEnd,
+  Smartphone,
+  TrendingUp,
+  Heart,
+  ShoppingBag,
+  Video,
+  Captions,
+  Mic,
+  Layers,
+  Drama,
+  Coffee,
+  Flame,
+  AudioLines,
+  BookOpen,
+  Columns2,
+  AlertTriangle,
+  Scale,
+  List,
+  HeartHandshake,
+  Crown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/_app/criar")({
   component: CriarPage,
 });
+
+type Icon = typeof Sparkles;
+
+const TYPE_ICON: Record<string, Icon> = {
+  reels: Film,
+  carrossel: GalleryHorizontalEnd,
+  stories: Smartphone,
+};
+const OBJ_ICON: Record<string, Icon> = {
+  crescimento: TrendingUp,
+  engajamento: Heart,
+  vendas: ShoppingBag,
+};
+const FMT_ICON: Record<string, Icon> = {
+  "lo-fi": Video,
+  "leia-legenda": Captions,
+  "fala-dinamica": Mic,
+  serie: Layers,
+  sketch: Drama,
+  rotina: Coffee,
+  "pauta-quente": Flame,
+  narrado: AudioLines,
+  storytelling: BookOpen,
+  dualidade: Columns2,
+  "erro-comum": AlertTriangle,
+  "jeito-certo-errado": Scale,
+  lista: List,
+  conexao: HeartHandshake,
+  desejo: Sparkles,
+  "narrativa-vendas": ShoppingBag,
+  "conteudo-premium": Crown,
+  outro: Sparkles,
+};
 
 function CriarPage() {
   const { user } = useSession();
@@ -65,34 +131,37 @@ function CriarPage() {
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Criar</div>
             <h1 className="editorial-title text-2xl">O que vamos criar hoje?</h1>
           </div>
-          <div className="hidden text-xs text-muted-foreground md:block">
-            Etapa {step + 1} de 3
-          </div>
+          <div className="hidden text-xs text-muted-foreground md:block">Etapa {step + 1} de 3</div>
         </div>
       </header>
 
       <div className="mx-auto max-w-4xl px-6 py-10">
         {step === 0 && (
-          <StepGrid>
-            {CONTENT_TYPES.map((t) => (
-              <ChoiceCard
-                key={t.id}
-                active={type === t.id}
-                title={t.label}
-                desc={t.desc}
-                onClick={() => setType(t.id)}
-              />
-            ))}
-          </StepGrid>
+          <>
+            <StepTitle title="Escolha o tipo de conteúdo" />
+            <StepGrid>
+              {CONTENT_TYPES.map((t) => (
+                <ChoiceCard
+                  key={t.id}
+                  icon={TYPE_ICON[t.id]}
+                  active={type === t.id}
+                  title={t.label}
+                  desc={t.desc}
+                  onClick={() => setType(t.id)}
+                />
+              ))}
+            </StepGrid>
+          </>
         )}
 
         {step === 1 && !isStories && (
           <>
-            <StepTitle title="Qual o objetivo?" sub="Isso muda o gancho, a linguagem e o CTA." />
+            <StepTitle title="Qual é o objetivo?" sub="Isso muda o gancho, a linguagem e o CTA." />
             <StepGrid>
               {OBJECTIVES.map((o) => (
                 <ChoiceCard
                   key={o.id}
+                  icon={OBJ_ICON[o.id]}
                   active={objective === o.id}
                   title={o.label}
                   desc={o.desc}
@@ -106,20 +175,34 @@ function CriarPage() {
         {step === 2 && (
           <>
             <StepTitle title="Qual o formato?" sub="Escolha o esqueleto do seu roteiro." />
-            <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-              {formats.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFormat(f.id)}
-                  className={cn(
-                    "rounded-xl border bg-card p-4 text-left text-sm transition-all shadow-soft hover:shadow-editorial hover:-translate-y-0.5",
-                    format === f.id && "border-violet ring-2 ring-violet/30",
-                  )}
-                >
-                  <div className="editorial-title text-base">{f.label}</div>
-                  {f.desc && <div className="mt-1 text-xs text-muted-foreground">{f.desc}</div>}
-                </button>
-              ))}
+            <div className="relative mt-6 px-10">
+              <Carousel opts={{ align: "start" }}>
+                <CarouselContent>
+                  {formats.map((f) => {
+                    const Ic = FMT_ICON[f.id] ?? Sparkles;
+                    const isActive = format === f.id;
+                    return (
+                      <CarouselItem key={f.id} className="basis-1/2 md:basis-1/3">
+                        <button
+                          onClick={() => setFormat(f.id)}
+                          className={cn(
+                            "flex h-full w-full flex-col rounded-2xl border bg-card p-5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-editorial",
+                            isActive && "border-violet ring-2 ring-violet/30",
+                          )}
+                        >
+                          <IconBox active={isActive}>
+                            <Ic className="h-5 w-5" />
+                          </IconBox>
+                          <div className="editorial-title mt-3 text-base">{f.label}</div>
+                          {f.desc && <div className="mt-1 text-xs text-muted-foreground">{f.desc}</div>}
+                        </button>
+                      </CarouselItem>
+                    );
+                  })}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
             </div>
           </>
         )}
@@ -144,11 +227,24 @@ function CriarPage() {
               disabled={!format || creating}
             >
               {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Gerar
+              Gerar {labelOf(CONTENT_TYPES, type)}
             </Button>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function IconBox({ active, children }: { active?: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        "flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
+        active ? "bg-violet text-violet-foreground" : "bg-secondary text-foreground",
+      )}
+    >
+      {children}
     </div>
   );
 }
@@ -167,11 +263,13 @@ function StepGrid({ children }: { children: React.ReactNode }) {
 }
 
 function ChoiceCard({
+  icon: Icon,
   active,
   title,
   desc,
   onClick,
 }: {
+  icon?: Icon;
   active: boolean;
   title: string;
   desc: string;
@@ -185,8 +283,13 @@ function ChoiceCard({
         active && "border-violet ring-2 ring-violet/30",
       )}
     >
-      <div className="editorial-title text-xl">{title}</div>
-      <div className="mt-2 text-sm text-muted-foreground">{desc}</div>
+      {Icon && (
+        <IconBox active={active}>
+          <Icon className="h-5 w-5" />
+        </IconBox>
+      )}
+      <div className="editorial-title mt-3 text-xl">{title}</div>
+      <div className="mt-1 text-sm text-muted-foreground">{desc}</div>
     </button>
   );
 }
