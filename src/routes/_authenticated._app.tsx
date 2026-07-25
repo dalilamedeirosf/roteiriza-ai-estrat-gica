@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-session";
 import { Logo } from "@/components/roteiriza/logo";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
   Sparkles,
@@ -99,12 +98,10 @@ function SidebarInner({
         <NavItem to="/criar" icon={Sparkles} label="Criar" onNavigate={onNavigate} />
         <NavItem to="/estrategista" icon={Compass} label="Estrategista" onNavigate={onNavigate} />
         <NavItem to="/analise-perfil" icon={ScanSearch} label="Análise de Perfil" onNavigate={onNavigate} />
+        <NavItem to="/templates" icon={LayoutTemplate} label="Templates" onNavigate={onNavigate} />
         <NavItem to="/conteudos" icon={History} label="Meus Conteúdos" onNavigate={onNavigate} />
         <NavItem to="/memoria" icon={Brain} label="Memória da IA" onNavigate={onNavigate} />
         <NavItem to="/configuracoes" icon={Settings} label="Configurações" onNavigate={onNavigate} />
-        <Separator className="my-4" />
-        <div className="px-3 pb-2 text-xs uppercase tracking-wider text-muted-foreground">Em breve</div>
-        <SoonItem icon={LayoutTemplate} label="Templates" />
       </nav>
       <div className="border-t p-4">
         <div className="mb-3 truncate text-xs text-muted-foreground">{email}</div>
@@ -146,12 +143,3 @@ function NavItem({
   );
 }
 
-function SoonItem({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/40">
-      <Icon className="h-4 w-4" />
-      <span>{label}</span>
-      <span className="ml-auto rounded-full border border-violet/40 bg-violet-soft px-2 py-0.5 text-[10px] font-medium text-violet">em breve</span>
-    </div>
-  );
-}
