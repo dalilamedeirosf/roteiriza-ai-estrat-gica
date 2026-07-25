@@ -1,13 +1,10 @@
 // Templates de Design — designs que abrem no Canva.
 //
-// COMO ADICIONAR OS SEUS:
-// 1) Crie/abra seu template no Canva e pegue o link de "Usar modelo" (Share → template link).
+// COMO ADICIONAR MAIS:
+// 1) No Canva → Compartilhar → "Link do modelo" (ou "Usar modelo").
 // 2) (Opcional) Salve uma miniatura em /public/templates/NOME.jpg e referencie em `thumb`.
 //    Sem `thumb`, mostramos um placeholder com gradiente + número.
 // 3) Adicione um objeto no array abaixo.
-//
-// Obs.: NÃO reutilize os designs de outros criadores — use os seus próprios ou
-// modelos públicos do Canva. Os exemplos abaixo apontam pra categorias públicas do Canva.
 
 export type DesignTemplate = {
   id: number;
@@ -17,12 +14,26 @@ export type DesignTemplate = {
 };
 
 export const DESIGN_TEMPLATES: DesignTemplate[] = [
-  { id: 1, title: "Carrossel de Instagram", url: "https://www.canva.com/instagram-posts/templates/carousel/" },
-  { id: 2, title: "Stories para Instagram", url: "https://www.canva.com/instagram-stories/templates/" },
-  { id: 3, title: "Capa de Reels", url: "https://www.canva.com/templates/s/reels-cover/" },
-  { id: 4, title: "Post educativo", url: "https://www.canva.com/instagram-posts/templates/" },
-  { id: 5, title: "Antes e depois", url: "https://www.canva.com/templates/s/before-and-after/" },
-  { id: 6, title: "Citação / frase", url: "https://www.canva.com/templates/s/quotes/" },
+  { id: 1, url: "https://www.canva.com/design/DAHA3qlyItY/RwMYdiouh_bHkD5d1wmL8w/view" },
+  { id: 2, url: "https://www.canva.com/design/DAHA3tqzk2w/QLqw2i3qwuKhLtgCTje6rw/view" },
+  { id: 3, url: "https://www.canva.com/design/DAHA3gAZ_ts/FTUH-cSocfdh3ZOSbw7EpQ/view" },
+  { id: 4, url: "https://www.canva.com/design/DAHA3qvEnJw/WoceytLd5HMOPEipYAx3sw/view" },
+  { id: 5, url: "https://www.canva.com/design/DAHA3lmf46Y/-ic9M3zQdZz5LfaB-vvRQA/view" },
+  { id: 6, url: "https://www.canva.com/design/DAHA3jVkP4E/AKjuaEhqRxmDQVE6-u9skA/view" },
+  { id: 7, url: "https://www.canva.com/design/DAHA3jyuJ-k/AEtW7wbhgWX_eRvwe7XHbg/view" },
+  { id: 8, url: "https://www.canva.com/design/DAHA3tDHY-8/5z6vjzEP5pmQP9bTTYfLnw/view" },
+  { id: 9, url: "https://www.canva.com/design/DAHA3nYvBrM/tgYx2dMppNoBb3Hv0iwDTw/view" },
+  { id: 10, url: "https://www.canva.com/design/DAHA3rhZAwQ/Hy7oMnWvt40EH0oi_D1gBw/view" },
+  { id: 11, url: "https://www.canva.com/design/DAHA3ufRchU/q_hCDIO48qBYP56syMlmXA/view" },
+  { id: 12, url: "https://www.canva.com/design/DAHA3s-7W_A/wt5NObbYvT6z0JPRCJ7TVw/view" },
+  { id: 13, url: "https://www.canva.com/design/DAHA3i7WvzE/TUKHlZY60AuZsst9lTy6LQ/view" },
+  { id: 14, url: "https://www.canva.com/design/DAHA3hNlLPA/pBaOZQzFf6q36rlrPKYuSA/view" },
+  { id: 15, url: "https://www.canva.com/design/DAHA3lUX-oA/RTG56yo7arMatv1Mafbm_w/view" },
+  { id: 16, url: "https://www.canva.com/design/DAHA3tESIZ8/P0iNKWwHEqMVKhk1CpsYsw/view" },
+  { id: 17, url: "https://www.canva.com/design/DAHA4YA-0r4/t-AFOwmUY3lqS1OZeZcUkA/view" },
+  { id: 18, url: "https://www.canva.com/design/DAHA4eWw_UE/N8OQs1RPA_sK3KZfjdkUPg/view" },
+  { id: 19, url: "https://www.canva.com/design/DAHA4eERDJY/T6TdQuMFeAQFYjlmhHCOfA/view" },
+  { id: 20, url: "https://www.canva.com/design/DAHA4bfEul4/c7XDxI-cK_Yc60F-1HrEMg/view" },
 ];
 
 // Gradiente determinístico pro placeholder (quando não há miniatura).
